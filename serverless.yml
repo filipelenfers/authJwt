@@ -1,0 +1,249 @@
+service: authJwt 
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+plugins:
+  - serverless-offline
+  
+provider:
+  name: aws
+  runtime: java8
+  stage: ${opt:stage, 'dev'}
+  environment:
+    secret: ${ssm:/${opt:stage, 'dev'}/jwt/algorithm/secret~true}
+    issuer: ${ssm:/${opt:stage, 'dev'}/jwt/issuer~true}
+    expirationInMinutes: ${ssm:/${opt:stage, 'dev'}/jwt/expirationInMinutes}
+    nbSeconds: ${ssm:/${opt:stage, 'dev'}/jwt/nbSeconds}
+    audience: ${ssm:/${opt:stage, 'dev'}/jwt/audience}
+  apiKeys:
+    - ${opt:stage, self:provider.stage}-testKey
+  usagePlan:
+    quota:
+      limit: 500
+      offset: 2
+      period: MONTH
+    throttle:
+      burstLimit: 50
+      rateLimit: 30
+  iamRoleStatements: # permissions for all of your functions can be set here
+  - Effect: Allow
+    Action: # Gives permission to DynamoDB tables in a specific region
+      - dynamodb:DescribeTable
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+    #Resource: "arn:aws:dynamodb:${self:custom.region}:${AWS::AccountId}:table/Users"
+    Resource: 
+      - Fn::Join: [":", [ "arn", "aws", "dynamodb", { "Ref": "AWS::Region" }, { Ref: "AWS::AccountId" }, "table/Users" ]]
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+custom:
+  region: ${opt:region, self:provider.region}
+
+# you can add packaging information here
+# Make sure to run "sbt assembly" to create a jar file
+# with all your dependencies and put that jar file name here.
+package:
+  artifact: target/scala-2.12/authJwt.jar
+
+functions:
+  customAuthorizerHandler:
+    handler: authJwt.CustomAuthorizerHandler
+    #events:
+    #  - http:
+    #      path: CustomAuthorizerHandler
+    #      method: post
+    #      cors: true
+  hello:
+    handler: authJwt.HelloWorld
+    events:
+      - http:
+          path: helloWorld
+          method: get
+          cors: true
+          authorizer: customAuthorizerHandler
+  login:
+    handler: authJwt.LoginHandler
+    events:
+      - http:
+          path: login
+          method: post
+          cors: true
+          private: true
+
+resources:
+  Resources:
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: ${self:service}-${opt:stage, self:provider.stage}
+    #### Gateway Response INIT
+    GatewayResponseDefault400:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: DEFAULT_4XX
+        ResponseTemplates:
+          application/json: "{\"errorCode\":901,\"message\":$context.error.messageString}"
+    GatewayResponseDefault500:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: DEFAULT_5XX
+        ResponseTemplates:
+          application/json: "{\"errorCode\":902,\"message\":$context.error.messageString}"
+    GatewayResponseAccessDeied:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: ACCESS_DENIED
+        ResponseTemplates:
+          application/json: "{\"errorCode\":903,\"message\":$context.error.messageString}"
+    GatewayResponseApiConfigurationError:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: API_CONFIGURATION_ERROR
+        ResponseTemplates:
+          application/json: "{\"errorCode\":904,\"message\":$context.error.messageString}"
+    GatewayResponseAuthorizerConfigurationError:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: AUTHORIZER_CONFIGURATION_ERROR
+        ResponseTemplates:
+          application/json: "{\"errorCode\":905,\"message\":$context.error.messageString}"
+    GatewayResponseAuthorizerFailure:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: AUTHORIZER_FAILURE
+        ResponseTemplates:
+          application/json: "{\"errorCode\":906,\"message\":$context.error.messageString}"
+    GatewayResponseBadRequestBody:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: BAD_REQUEST_BODY
+        ResponseTemplates:
+          application/json: "{\"errorCode\":907,\"message\":$context.error.messageString}"
+    GatewayResponseBadRequestParameters:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: BAD_REQUEST_PARAMETERS
+        ResponseTemplates:
+          application/json: "{\"errorCode\":908,\"message\":$context.error.messageString}"
+    GatewayResponseExpiredToken:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: EXPIRED_TOKEN
+        ResponseTemplates:
+          application/json: "{\"errorCode\":909,\"message\":$context.error.messageString}"
+    GatewayResponseIntegrationFailure:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: INTEGRATION_FAILURE
+        ResponseTemplates:
+          application/json: "{\"errorCode\":910,\"message\":$context.error.messageString}"
+    GatewayResponseIntegrationTimeout:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: INTEGRATION_TIMEOUT
+        ResponseTemplates:
+          application/json: "{\"errorCode\":911,\"message\":$context.error.messageString}"
+    GatewayResponseInvalidApiKey:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: INVALID_API_KEY
+        ResponseTemplates:
+          application/json: "{\"errorCode\":912,\"message\":$context.error.messageString}"
+    GatewayResponseInvalidSignature:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: INVALID_SIGNATURE
+        ResponseTemplates:
+          application/json: "{\"errorCode\":913,\"message\":$context.error.messageString}"
+    GatewayResponseMissingAuthenticationToken:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: MISSING_AUTHENTICATION_TOKEN
+        ResponseTemplates:
+          application/json: "{\"errorCode\":914,\"message\":$context.error.messageString}"
+    GatewayResponseQuotaExceeded:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: QUOTA_EXCEEDED
+        ResponseTemplates:
+          application/json: "{\"errorCode\":915,\"message\":$context.error.messageString}"
+    GatewayResponseRequestTooLarge:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: REQUEST_TOO_LARGE
+        ResponseTemplates:
+          application/json: "{\"errorCode\":916,\"message\":$context.error.messageString}"
+    GatewayResponseResourceNotFound:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: RESOURCE_NOT_FOUND
+        ResponseTemplates:
+          application/json: "{\"errorCode\":917,\"message\":$context.error.messageString}"
+    GatewayResponseThrottled:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: THROTTLED
+        ResponseTemplates:
+          application/json: "{\"errorCode\":918,\"message\":$context.error.messageString}"
+    GatewayResponseUnauthorized:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: UNAUTHORIZED
+        ResponseTemplates:
+          application/json: "{\"errorCode\":919,\"message\":$context.error.messageString}"
+    GatewayResponseUnauthorizedMediType:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        RestApiId: 
+          Ref: 'ApiGatewayRestApi'
+        ResponseType: UNSUPPORTED_MEDIA_TYPE
+        ResponseTemplates:
+          application/json: "{\"errorCode\":920,\"message\":$context.error.messageString}"
+    #### Gateway Response END
