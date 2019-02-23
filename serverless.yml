@@ -16,6 +16,7 @@ provider:
     expirationInMinutes: ${ssm:/${opt:stage, 'dev'}/jwt/expirationInMinutes}
     nbSeconds: ${ssm:/${opt:stage, 'dev'}/jwt/nbSeconds}
     audience: ${ssm:/${opt:stage, 'dev'}/jwt/audience}
+    salt: ${ssm:/${opt:stage, 'dev'}/jwt/salt~true}
   apiKeys:
     - ${opt:stage, self:provider.stage}-testKey
   usagePlan:

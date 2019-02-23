@@ -16,6 +16,7 @@ import ApiGatewayProxyResponse._
 
 class HelloWorld  extends  ApiGatewayProxyHandler  {
 
+
   def handleRequest(input: ApiGatewayProxyRequest, context: Context): ApiGatewayProxyResponse = {
     println(input)
     okResponse("HelloWorld!")
@@ -26,7 +27,8 @@ class LoginHandler extends ApiGatewayProxyHandler {
   val client = AmazonDynamoDBClientBuilder.standard().build();
   val dynamoDB = new DynamoDB(client);
   val table = dynamoDB.getTable("Users");
-  val salt = "8693345"
+  val salt = System.getenv("salt")
+  
   
 
   def handleRequest(input: ApiGatewayProxyRequest, context: Context): ApiGatewayProxyResponse = {
