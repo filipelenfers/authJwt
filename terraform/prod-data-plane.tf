@@ -105,3 +105,15 @@ resource "aws_ssm_parameter" "token_nb" {
     environment = "${var.environment}"
   }
 }
+
+resource "aws_ssm_parameter" "salt" {
+  name        = "/${var.environment}/jwt/salt"
+  description = "Salt to use on passwords"
+  type        = "SecureString"
+  value       = "8693345"
+  overwrite   = true
+
+  tags = {
+    environment = "${var.environment}"
+  }
+}
