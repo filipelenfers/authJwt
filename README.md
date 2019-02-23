@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/filipelenfers/authJwt.svg?style=svg)](https://circleci.com/gh/filipelenfers/authJwt)
+
 # AuthJWT Service
 
 ## Deploy
@@ -33,8 +35,5 @@ curl -H "Authorization: PASTE_TOKEN_HERE" https://YOU_API_URL.execute-api.us-eas
 * sls invoke local to test... see notes.txt
 * smm for all parameters
 * terraform control usage plans
-* terraform create ssm paramaters, for now salt used for passwords is: 8693345
-* terraform run sls deploy (could be used with null-source and local-exec provider)
 * unit testing
 * functional testing
-* continuos deploying in dev stage
