@@ -31,9 +31,8 @@ curl -H "Authorization: PASTE_TOKEN_HERE" https://YOU_API_URL.execute-api.us-eas
 
 ## TODO
 
-* Make brief intro and architecture diagram
+* Add architecture diagram on README
 * sls invoke local to test... see notes.txt
-* smm for all parameters
 * terraform control usage plans
 * unit testing
 * functional testing
