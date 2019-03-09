@@ -5,7 +5,7 @@ import sbtrelease.Version
 name := "AuthJwt"
 
 resolvers += Resolver.sonatypeRepo("public")
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 val circeVersion = "0.10.0"
 
